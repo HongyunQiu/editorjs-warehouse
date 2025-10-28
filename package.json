@@ -9,7 +9,7 @@
   ],
   "description": "Warehouse Form Block Tool for Editor.js",
   "license": "MIT",
-  "repository": "https://github.com/editor-js/warehouse",
+  "repository": "https://github.com/HongyunQiu/editorjs-warehouse",
   "files": [
     "dist"
   ],
