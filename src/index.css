@@ -1,0 +1,37 @@
+.cdx-warehouse {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 12px;
+  position: relative;
+}
+
+.cdx-warehouse__row {
+  display: contents;
+}
+
+.cdx-warehouse__label {
+  color: #707684;
+  padding: 6px 0;
+}
+
+.cdx-warehouse__value {
+  min-height: 32px;
+  padding: 6px 8px;
+}
+
+.cdx-warehouse [contentEditable=true][data-placeholder]::before{
+  position: absolute;
+  content: attr(data-placeholder);
+  color: #707684;
+  font-weight: normal;
+  opacity: 0;
+}
+
+.cdx-warehouse [contentEditable=true][data-placeholder]:empty::before {
+  opacity: 1;
+}
+
+.cdx-warehouse [contentEditable=true][data-placeholder]:empty:focus::before {
+  opacity: 0;
+}
