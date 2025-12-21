@@ -5,6 +5,15 @@
   gap: 6px 12px;
   position: relative;
   align-items: start;
+
+  /* 主题变量（宿主可覆盖） */
+  --warehouse-choose-bg: #fff7ed;
+  --warehouse-choose-border: #fdba74;
+  --warehouse-choose-text: #c2410c;
+  --warehouse-choose-bg-hover: #ffedd5;
+  --warehouse-choose-border-hover: #fb923c;
+  --warehouse-choose-text-hover: #9a3412;
+  --warehouse-choose-focus-ring: rgba(251, 146, 60, 0.25);
 }
 
 .cdx-warehouse__row {
@@ -42,15 +51,27 @@
   line-height: 1.4;
 }
 
-.cdx-warehouse__footer {
+.cdx-warehouse__bottom {
   grid-column: 1 / -1;
-  margin-top: 6px;
+  margin-top: 10px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.cdx-warehouse__footer {
+  margin: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .cdx-warehouse__divider {
-  grid-column: 1 / -1;
-  margin-top: 10px;
-  padding-top: 8px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -58,6 +79,8 @@
   font-size: 14px;
   line-height: 1;
   user-select: none;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .cdx-warehouse__divider::before {
@@ -66,16 +89,26 @@
 }
 
 .cdx-warehouse__choose-button {
-  font-size: 13px;
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid #d3d9e2;
-  background: #f5f7fb;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--warehouse-choose-border);
+  background: var(--warehouse-choose-bg);
+  color: var(--warehouse-choose-text);
+  font-weight: 600;
   cursor: pointer;
 }
 
 .cdx-warehouse__choose-button:hover {
-  background: #e9efff;
+  background: var(--warehouse-choose-bg-hover);
+  border-color: var(--warehouse-choose-border-hover);
+  color: var(--warehouse-choose-text-hover);
+}
+
+.cdx-warehouse__choose-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--warehouse-choose-focus-ring);
 }
 
 .cdx-warehouse__chooser {

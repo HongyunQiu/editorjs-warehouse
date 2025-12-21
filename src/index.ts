@@ -95,6 +95,7 @@ interface WarehouseCSS {
   valueSku: string;
   valueCreatedAt: string;
   valueCreatedBy: string;
+  bottomBar: string;
   footer: string;
   divider: string;
   chooseButton: string;
@@ -280,6 +281,7 @@ export default class WarehouseForm implements BlockTool {
       valueSku: 'cdx-warehouse__value--sku',
       valueCreatedAt: 'cdx-warehouse__value--createdAt',
       valueCreatedBy: 'cdx-warehouse__value--createdBy',
+      bottomBar: 'cdx-warehouse__bottom',
       footer: 'cdx-warehouse__footer',
       divider: 'cdx-warehouse__divider',
       chooseButton: 'cdx-warehouse__choose-button',
@@ -436,6 +438,13 @@ export default class WarehouseForm implements BlockTool {
       )
     );
 
+    /**
+     * 底部区域：把“从已有条目选择”按钮与分隔符放到同一行
+     * - divider 采用 absolute 居中，避免因按钮宽度导致视觉偏移
+     * - readOnly 时不渲染按钮，但仍保留 divider 作为块分隔
+     */
+    const bottomBar = make('div', [this.css.bottomBar]);
+
     if (!this.readOnly) {
       const footer = make('div', [this.css.footer]);
       const chooseBtn = make('button', [this.css.chooseButton], {
@@ -444,11 +453,12 @@ export default class WarehouseForm implements BlockTool {
       }) as HTMLButtonElement;
       chooseBtn.addEventListener('click', () => this.openChooser(container));
       footer.appendChild(chooseBtn);
-      container.appendChild(footer);
+      bottomBar.appendChild(footer);
     }
 
     // 底部分割符：用于在一个笔记中连续出现多个 warehouse 块时形成清晰分隔
-    container.appendChild(make('div', [this.css.divider], { ariaHidden: 'true' } as any));
+    bottomBar.appendChild(make('div', [this.css.divider], { ariaHidden: 'true' } as any));
+    container.appendChild(bottomBar);
 
     return container;
   }
