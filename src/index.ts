@@ -82,6 +82,7 @@ interface WarehouseCSS {
   baseClass: string;
   wrapper: string;
   row: string;
+  item: string;
   label: string;
   value: string;
   valueLibraryName: string;
@@ -95,6 +96,7 @@ interface WarehouseCSS {
   valueCreatedAt: string;
   valueCreatedBy: string;
   footer: string;
+  divider: string;
   chooseButton: string;
   chooser: string;
   chooserHeader: string;
@@ -265,6 +267,7 @@ export default class WarehouseForm implements BlockTool {
       baseClass: this.api.styles.block,
       wrapper: 'cdx-warehouse',
       row: 'cdx-warehouse__row',
+      item: 'cdx-warehouse__item',
       label: 'cdx-warehouse__label',
       value: this.api.styles.input,
       valueLibraryName: 'cdx-warehouse__value--libraryName',
@@ -278,6 +281,7 @@ export default class WarehouseForm implements BlockTool {
       valueCreatedAt: 'cdx-warehouse__value--createdAt',
       valueCreatedBy: 'cdx-warehouse__value--createdBy',
       footer: 'cdx-warehouse__footer',
+      divider: 'cdx-warehouse__divider',
       chooseButton: 'cdx-warehouse__choose-button',
       chooser: 'cdx-warehouse__chooser',
       chooserHeader: 'cdx-warehouse__chooser-header',
@@ -315,7 +319,7 @@ export default class WarehouseForm implements BlockTool {
       this.activeField = field;
     };
 
-    const createRow = (
+    const createItem = (
       labelText: string,
       field: keyof WarehouseData,
       valueClasses: string[],
@@ -323,7 +327,7 @@ export default class WarehouseForm implements BlockTool {
       placeholder: string,
       editable: boolean = true
     ) => {
-      const row = make('div', [this.css.row]);
+      const item = make('div', [this.css.item, this.css.row]);
       const label = make('div', [this.css.label], { innerHTML: this.api.i18n.t(labelText) });
       const value = make('div', [this.css.value, 'cdx-warehouse__value', ...valueClasses], {
         contentEditable: editable && !this.readOnly,
@@ -332,13 +336,13 @@ export default class WarehouseForm implements BlockTool {
       value.dataset.placeholder = placeholder;
       value.dataset.field = field;
       value.addEventListener('focus', () => setActiveField(field));
-      row.appendChild(label);
-      row.appendChild(value);
-      return row;
+      item.appendChild(label);
+      item.appendChild(value);
+      return item;
     };
 
     container.appendChild(
-      createRow(
+      createItem(
         '库名',
         'libraryName',
         [this.css.valueLibraryName],
@@ -347,7 +351,7 @@ export default class WarehouseForm implements BlockTool {
       )
     );
     container.appendChild(
-      createRow(
+      createItem(
         '分类',
         'category',
         [this.css.valueCategory],
@@ -356,7 +360,7 @@ export default class WarehouseForm implements BlockTool {
       )
     );
     container.appendChild(
-      createRow(
+      createItem(
         '品名',
         'name',
         [this.css.valueName],
@@ -365,7 +369,7 @@ export default class WarehouseForm implements BlockTool {
       )
     );
     container.appendChild(
-      createRow(
+      createItem(
         '含税单价',
         'unitPriceWithTax',
         [this.css.valueUnitPriceWithTax],
@@ -374,7 +378,7 @@ export default class WarehouseForm implements BlockTool {
       )
     );
     container.appendChild(
-      createRow(
+      createItem(
         '数量',
         'quantity',
         [this.css.valueQuantity],
@@ -383,7 +387,7 @@ export default class WarehouseForm implements BlockTool {
       )
     );
     container.appendChild(
-      createRow(
+      createItem(
         '税率',
         'taxRate',
         [this.css.valueTaxRate],
@@ -392,7 +396,7 @@ export default class WarehouseForm implements BlockTool {
       )
     );
     container.appendChild(
-      createRow(
+      createItem(
         '供应商',
         'supplier',
         [this.css.valueSupplier],
@@ -401,7 +405,7 @@ export default class WarehouseForm implements BlockTool {
       )
     );
     container.appendChild(
-      createRow(
+      createItem(
         'SKU',
         'sku',
         [this.css.valueSku],
@@ -411,7 +415,7 @@ export default class WarehouseForm implements BlockTool {
     );
     // 录入时间（只读、由系统自动生成）
     container.appendChild(
-      createRow(
+      createItem(
         '录入时间',
         'createdAt',
         [this.css.valueCreatedAt],
@@ -422,7 +426,7 @@ export default class WarehouseForm implements BlockTool {
     );
     // 录入人（只读、由系统自动生成）
     container.appendChild(
-      createRow(
+      createItem(
         '录入人',
         'createdBy',
         [this.css.valueCreatedBy],
@@ -442,6 +446,9 @@ export default class WarehouseForm implements BlockTool {
       footer.appendChild(chooseBtn);
       container.appendChild(footer);
     }
+
+    // 底部分割符：用于在一个笔记中连续出现多个 warehouse 块时形成清晰分隔
+    container.appendChild(make('div', [this.css.divider], { ariaHidden: 'true' } as any));
 
     return container;
   }
