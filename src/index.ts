@@ -62,6 +62,11 @@ export interface WarehouseData {
   sku: string;
   createdAt: string;
   createdBy: string;
+  /**
+   * QNotes 凭证块标记：保存成功后由前端写入 `block.data.saved = true`
+   * - saved === true 时，视为已生效凭证，不允许被“从已有条目选择”覆盖
+   */
+  saved?: boolean;
 }
 
 /**
@@ -248,6 +253,14 @@ export default class WarehouseForm implements BlockTool {
 
     // 数据兼容：优先读取新结构字段，其次回退到旧结构（仅 sku/name/unitPrice/quantity/supplier）
     const legacy: any = data || {};
+
+    // QNotes 约定：凭证类型 block 保存成功后会写入 block.data.saved = true
+    // 为兼容可能存在的非布尔形态，这里做一次归一化。
+    const savedFlag =
+      legacy?.saved === true ||
+      legacy?.saved === 1 ||
+      legacy?.saved === '1' ||
+      legacy?.saved === 'true';
     this.data = {
       libraryName: (legacy.libraryName as string) ?? '',
       category: (legacy.category as string) ?? '',
@@ -262,6 +275,7 @@ export default class WarehouseForm implements BlockTool {
       sku: (legacy.sku as string) ?? '',
       createdAt: (legacy.createdAt as string) ?? defaultCreatedAt,
       createdBy: (legacy.createdBy as string) ?? defaultCreatedBy,
+      saved: savedFlag ? true : undefined,
     };
 
     this.css = {
@@ -445,7 +459,8 @@ export default class WarehouseForm implements BlockTool {
      */
     const bottomBar = make('div', [this.css.bottomBar]);
 
-    if (!this.readOnly) {
+    // 已生效凭证（saved === true）不允许通过“从已有条目选择”覆盖内容
+    if (!this.readOnly && this.data.saved !== true) {
       const footer = make('div', [this.css.footer]);
       const chooseBtn = make('button', [this.css.chooseButton], {
         type: 'button',
@@ -470,6 +485,7 @@ export default class WarehouseForm implements BlockTool {
       // 元数据字段沿用内存中的值（由系统自动生成，不暴露为可编辑字段）
       createdAt: this.data.createdAt,
       createdBy: this.data.createdBy,
+      saved: this.data.saved,
       libraryName: select(this.css.valueLibraryName)?.innerHTML ?? '',
       category: select(this.css.valueCategory)?.innerHTML ?? '',
       name: select(this.css.valueName)?.innerHTML ?? '',
@@ -510,6 +526,14 @@ export default class WarehouseForm implements BlockTool {
    * 打开选择表浮层
    */
   private async openChooser(root: HTMLElement): Promise<void> {
+    if (this.data && this.data.saved === true) {
+      this.api.notifier.show({
+        message: this.api.i18n.t('已保存的凭证不可从已有条目选择'),
+        style: 'warning',
+      });
+      return;
+    }
+
     if (!this.placeholders.queryBlocks) {
       // 外部未注入查询回调，则不打开
       this.api.notifier.show({
@@ -677,7 +701,14 @@ export default class WarehouseForm implements BlockTool {
    * 将选中的一行数据回填到当前块
    */
   private applyItem(item: WarehouseData): void {
-    this.data = { ...item };
+    /**
+     * 重要：不要把来源条目的 `saved` 标志继承到当前块。
+     *
+     * QNotes 约定：保存成功后前端会写入 `block.data.saved = true`，表示“已生效凭证”。
+     * “从已有条目选择”属于复制/回填行为，当前块仍应视为可编辑/未生效，
+     * 否则会导致该块被错误当作“已保存凭证”并触发防覆盖/防删除等保护逻辑。
+     */
+    this.data = { ...item, saved: undefined };
     // 通过 BlockAPI 强制重新渲染当前块
     try {
       const holder = this.block.holder;
@@ -686,7 +717,8 @@ export default class WarehouseForm implements BlockTool {
         const div = el as HTMLDivElement;
         const field = (div.dataset.field || '') as keyof WarehouseData;
         if (field && field in this.data) {
-          div.innerHTML = this.data[field] || '';
+          const v = this.data[field];
+          div.innerHTML = typeof v === 'string' ? v : '';
         }
       });
     } catch (e) {
