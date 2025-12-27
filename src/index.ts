@@ -35,6 +35,19 @@ export interface WarehouseConfig extends ToolConfig {
    * 获取当前时间的展示字符串（用于自动生成“录入时间”/createdAt）
    */
   getNowLabel?: () => string;
+
+  /**
+   * 当前工具实例是否作为“凭证类型”使用。
+   *
+   * - true：当 data.saved === true 时，该块视为只读（等价于 Editor.js 的只读块），
+   *         不允许再通过输入或“从已有条目选择”覆盖内容。
+   * - false / 未设置：data.saved 仅作为普通业务字段，不触发额外只读行为。
+   *
+   * 说明：
+   * - 是否为“凭证类型”由宿主环境在 tools.config 中注入，工具本身不直接依赖后端元数据；
+   * - 这样同一工具既可在凭证场景复用，也可在普通表单场景复用。
+   */
+  isVoucherType?: boolean;
 }
 
 /**
@@ -126,6 +139,13 @@ export default class WarehouseForm implements BlockTool {
 
   private placeholders: Required<WarehouseConfig>;
 
+   /**
+    * 当前实例是否作为“凭证类型”使用（由宿主通过 config.isVoucherType 注入）。
+    * - true：当 data.saved === true 时，该块应视为只读。
+    * - false：即便存在 saved 字段，也仅作为普通业务字段，不触发额外只读。
+    */
+   private isVoucherType: boolean;
+
   /**
    * 当前选择/聚焦的字段 key，用于 queryBlocks 的 field
    */
@@ -144,6 +164,7 @@ export default class WarehouseForm implements BlockTool {
     this.api = api;
     this.readOnly = readOnly;
     this.block = block;
+    this.isVoucherType = !!config?.isVoucherType;
 
     // 占位符配置，兼容默认文案
     this.placeholders = {
@@ -309,6 +330,19 @@ export default class WarehouseForm implements BlockTool {
     };
   }
 
+  /**
+   * 计算当前块的“有效只读”状态。
+   *
+   * - 当 Editor.js 整体处于只读模式时（this.readOnly === true），所有字段均只读；
+   * - 当作为“凭证类型”使用且 data.saved === true 时，即便编辑器处于编辑模式，
+   *   当前块也视为只读（防止已生效凭证被二次修改/覆盖）。
+   */
+  private get isBlockReadOnly(): boolean {
+    const editorReadOnly = this.readOnly;
+    const isSavedVoucher = this.isVoucherType && this.data && this.data.saved === true;
+    return editorReadOnly || isSavedVoucher;
+  }
+
   public static get isReadOnlySupported(): boolean {
     return true;
   }
@@ -346,7 +380,8 @@ export default class WarehouseForm implements BlockTool {
       const item = make('div', [this.css.item, this.css.row]);
       const label = make('div', [this.css.label], { innerHTML: this.api.i18n.t(labelText) });
       const value = make('div', [this.css.value, 'cdx-warehouse__value', ...valueClasses], {
-        contentEditable: editable && !this.readOnly,
+        // 字段是否可编辑：仅在“可编辑字段”且当前块不处于有效只读状态时开启
+        contentEditable: editable && !this.isBlockReadOnly,
         innerHTML: valueHTML,
       });
       value.dataset.placeholder = placeholder;
@@ -455,12 +490,13 @@ export default class WarehouseForm implements BlockTool {
     /**
      * 底部区域：把“从已有条目选择”按钮与分隔符放到同一行
      * - divider 采用 absolute 居中，避免因按钮宽度导致视觉偏移
-     * - readOnly 时不渲染按钮，但仍保留 divider 作为块分隔
+     * - 有效只读(isBlockReadOnly) 时不渲染按钮，但仍保留 divider 作为块分隔
      */
     const bottomBar = make('div', [this.css.bottomBar]);
 
-    // 已生效凭证（saved === true）不允许通过“从已有条目选择”覆盖内容
-    if (!this.readOnly && this.data.saved !== true) {
+    // 已生效凭证（isVoucherType && saved === true）不允许通过“从已有条目选择”覆盖内容。
+    // 非凭证用法（isVoucherType === false）则不受 saved 字段约束，可始终使用选择功能。
+    if (!this.isBlockReadOnly && (!this.isVoucherType || this.data.saved !== true)) {
       const footer = make('div', [this.css.footer]);
       const chooseBtn = make('button', [this.css.chooseButton], {
         type: 'button',
@@ -526,7 +562,8 @@ export default class WarehouseForm implements BlockTool {
    * 打开选择表浮层
    */
   private async openChooser(root: HTMLElement): Promise<void> {
-    if (this.data && this.data.saved === true) {
+    // 仅当“作为凭证类型使用”且已保存时，禁止通过选择表覆盖内容。
+    if (this.isVoucherType && this.data && this.data.saved === true) {
       this.api.notifier.show({
         message: this.api.i18n.t('已保存的凭证不可从已有条目选择'),
         style: 'warning',
